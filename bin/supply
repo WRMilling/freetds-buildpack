@@ -12,8 +12,8 @@ OPENSSL_VERSION = '1.1.0e'
 ######################################
 # OPENSSL
 
-mkdir -p $CACHE_DIR
-cd $CACHE_DIR
+mkdir -p $BUILD_DIR
+cd $BUILD_DIR
 
 set -x
 set -e
@@ -30,7 +30,7 @@ make install_sw install_ssldirs
 ######################################
 # FREETDS
 
-cd $CACHE_DIR
+cd $BUILD_DIR
 
 wget http://www.freetds.org/files/stable/freetds-$FREETDS_VERSION.tar.gz
 tar -xzf freetds-$FREETDS_VERSION.tar.gz
