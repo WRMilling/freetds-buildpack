@@ -1,35 +1,42 @@
-#!/usr/bin/env ruby
+#!/usr/bin/env bash
 
+set -euo pipefail
 # sync output
-$stdout.sync = true
+# $stdout.sync = true
 
-BUILD_DIR = ARGV[0]
-CACHE_DIR = ARGV[1]
-ARCHIVE_NAME = "freetds-0.95.84"
+BUILD_DIR = $1
+CACHE_DIR = $2
+FREETDS_VERSION = '1.00.27'
+OPENSSL_VERSION = '1.1.0e'
 
-  puts "-----> FreeTDS building in #{BUILD_DIR}"
+######################################
+# OPENSSL
 
-  puts "-----> Fetching & Extracting FreeTDS"
-  puts `mkdir -p #{CACHE_DIR}`
-  puts `curl ftp://ftp.freetds.org/pub/freetds/stable/freetds-0.95.84.tar.gz -o - | tar -xz -C #{CACHE_DIR} -f -`
-  puts `ls -al #{CACHE_DIR}`
+mkdir -p $CACHE_DIR
+cd $CACHE_DIR
 
-  puts "-----> Configurating FreeTDS"
-  puts `mkdir -p #{BUILD_DIR}/vendor/freetds`
-  puts `cd #{CACHE_DIR}/#{ARCHIVE_NAME} && ./configure --prefix=#{BUILD_DIR}/vendor/freetds --with-libiconv-prefix=DIR --with-openssl=DIR --with-tdsver=7.3`
+set -x
+set -e
 
-  puts "-----> Building FreeTDS"
-  puts `cd #{CACHE_DIR}/#{ARCHIVE_NAME} && make`
+wget https://www.openssl.org/source/openssl-$OPENSSL_VERSION.tar.gz
 
-puts "-----> Installing FreeTDS into #{BUILD_DIR}/vendor/freetds"
-puts `mkdir -p #{BUILD_DIR}/vendor/freetds`
-puts `cd #{CACHE_DIR}/#{ARCHIVE_NAME} && make install`
+tar -xzf openssl-$OPENSSL_VERSION.tar.gz
 
-puts "-----> Copying FreeTDS into /app/vendor/freetds"
-puts `cp -r #{BUILD_DIR}/vendor/freetds /app/vendor/freetds`
+cd openssl-$OPENSSL_VERSION
+./config --prefix=/opt/local --openssldir=/opt/local
+make
+make install_sw install_ssldirs
 
-puts "-----> Writing FreeTDS configuration for subsequent buildpack"
+######################################
+# FREETDS
 
-File.open("export", "a") do |file|
-  file.write("export FREETDS_DIR=/app/vendor/freetds")
-end
+cd $CACHE_DIR
+
+wget http://www.freetds.org/files/stable/freetds-$FREETDS_VERSION.tar.gz
+tar -xzf freetds-$FREETDS_VERSION.tar.gz
+cd freetds-$FREETDS_VERSION
+./configure --prefix=/opt/local \
+  --with-openssl=/opt/local \
+  --with-tdsver=7.3
+make
+make install
